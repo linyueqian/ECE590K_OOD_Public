@@ -1,0 +1,12 @@
+knn-ood/datasets/
+knn-ood/checkpoints/
+OpenOOD/data/
+knn-ood/ylib/
+knn/data/
+*fractals*
+*checkpoint*
+knn/checkpoints.zip
+knn-ood/cache/
+knn-ood/cache/CIFAR-10_train_resnet18-supcon_in_alllayers.npy 
+test_output/
+*pycache*
