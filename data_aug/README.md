@@ -12,7 +12,7 @@ This is a Python script that performs data augmentation on a folder of images us
 ## Usage
 To use the script, run the following command in a terminal or command prompt:
 ```
-python data_aug.py source_folder target_folder augmentation
+python augment_images.py source_folder target_folder augmentation
 ```
 Replace source_folder with the path to the folder containing the images you want to augment, target_folder with the path to the folder where you want to save the augmented images, and augmentation with the name of the data augmentation technique you want to apply to the images.
 

@@ -1,3 +1,12 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 19 23:17:22 2023
+
+@author: Yueqian Lin
+"""
+
 import os
 
 import numpy as np
@@ -29,13 +38,13 @@ AVAILABLE_AUGMENTATIONS = {
     'flip_vertical': lambda img: cv2.flip(img, 0),
     'cutout': lambda img: cutout(img, n_holes=1, length=5),
     'blur': lambda img: cv2.GaussianBlur(img, (5, 5), 0),
-    'brightness': lambda img: ImageEnhance.Brightness(Image.fromarray(img)).enhance(1.5),
-    'contrast': lambda img: ImageEnhance.Contrast(Image.fromarray(img)).enhance(1.5),
-    'color': lambda img: ImageEnhance.Color(Image.fromarray(img)).enhance(1.5),
-    'sharpness': lambda img: ImageEnhance.Sharpness(Image.fromarray(img)).enhance(1.5),
-    'autocontrast': lambda img: ImageOps.autocontrast(Image.fromarray(img)),
-    'equalize': lambda img: ImageOps.equalize(Image.fromarray(img)),
-    'invert': lambda img: ImageOps.invert(Image.fromarray(img)),
+    'brightness': lambda img: pil_to_cv2(ImageEnhance.Brightness(Image.fromarray(img)).enhance(1.5)),
+    'contrast': lambda img: pil_to_cv2(ImageEnhance.Contrast(Image.fromarray(img)).enhance(1.5)),
+    'color': lambda img: pil_to_cv2(ImageEnhance.Color(Image.fromarray(img)).enhance(1.5)),
+    'sharpness': lambda img: pil_to_cv2(ImageEnhance.Sharpness(Image.fromarray(img)).enhance(1.5)),
+    'autocontrast': lambda img: pil_to_cv2(ImageOps.autocontrast(Image.fromarray(img))),
+    'equalize': lambda img: pil_to_cv2(ImageOps.equalize(Image.fromarray(img))),
+    'invert': lambda img: pil_to_cv2(ImageOps.invert(Image.fromarray(img))),
     'style_transfer': lambda img: style_transfer(img),
     'style_transfer_mix': lambda img: style_transfer_mix(img),
 }
@@ -59,7 +68,7 @@ def style_transfer(img):
     img_restyled = augmentor(img_tensor)
 
     # Downsample to original size
-    img_restyled = torch.nn.functional.interpolate(img_restyled, size=size, mode='bicubic', align_corners=False)
+    img_restyled = torch.nn.functional.interpolate(img_restyled, size=(32, 32), mode='bicubic', align_corners=False)
 
     # Convert tensor back to cv2 image and return
     img_restyled = img_restyled.squeeze().cpu()
@@ -67,7 +76,8 @@ def style_transfer(img):
     
     return img_restyled
 
-def style_transfer_mix(img, beta=0.2):
+def style_transfer_mix(img, beta=0.8):
+    origin_tensor = toTensor(img).unsqueeze(0).to('cuda:0' if torch.cuda.is_available() else 'cpu')
      # Get original image size and resize to 256x256
     img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
     
@@ -75,26 +85,28 @@ def style_transfer_mix(img, beta=0.2):
     img = cv2_to_pil(img)
 
     # Convert image to tensor and move to GPU
-    img_tensor = toTensor(img).unsqueeze(0)
-    size = img.size
-    img_tensor = img_tensor.to('cuda:0' if torch.cuda.is_available() else 'cpu')
+    img_tensor = toTensor(img).unsqueeze(0).to('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # Create style augmentor
     augmentor = StyleAugmentor()
 
     # Randomize style
     img_restyled = augmentor(img_tensor)
-    # Downsample to original size
-    img_restyled = torch.nn.functional.interpolate(img_restyled, size=size, mode='bicubic', align_corners=False)
+    # Downsample to 32*32
+    img_restyled = torch.nn.functional.interpolate(img_restyled, size=(32, 32), mode='bicubic', align_corners=False)
     mixings = pixmix_utils.mixings
     mixed_op = np.random.choice(mixings)
-    mixed = mixed_op(img_tensor, img_restyled, beta=0.5)
+    mixed = mixed_op(origin_tensor, img_restyled, beta)
     mixed = torch.clip(mixed, 0, 1)
     
     
     # Convert tensor back to cv2 image and return
     mixed = mixed.squeeze().cpu()
     mixed = pil_to_cv2(toPIL(mixed))
+    # save image
+    img_restyled = img_restyled.squeeze().cpu()
+    img_restyled = pil_to_cv2(toPIL(img_restyled))
+    cv2.imwrite('./aug_img/style_transfer_mix_before_0029.png', img_restyled)
     return mixed
 
     
@@ -133,6 +145,14 @@ def cutout(img, n_holes=1, length=40):
     return img
 
 def augment_images(source_folder, target_folder, augmentation):
+    '''
+    Return a function that performs the chosen augmentation technique on all images in the source folder
+    
+    Parameters:
+        source_folder (str): Path to the folder containing the images to be augmented
+        target_folder (str): Path to the folder where the augmented images will be saved
+        augmentation (str): The name of the augmentation technique to be applied
+    '''
     # Create target folder if it doesn't exist
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
