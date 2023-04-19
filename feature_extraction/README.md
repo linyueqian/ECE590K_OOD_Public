@@ -49,6 +49,10 @@ download: need to download dataset or not
 features = feature_extraction(optimizer='Bayessian',dataset='DATASET_CIFAR10',data_augmentation = False,download = True)
 ```
 
+## Bugs (fixing)
+- cannot load DTD (texture) if pytorch < 0.15.0
+- unable to load Places365
+
 ## Anything else
 1. data is not uploaded due to its large size
 2. If you have any problem, please contact Yike Guo
