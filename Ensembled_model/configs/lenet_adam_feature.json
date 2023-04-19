@@ -1,0 +1,13 @@
+{
+    "batch_size": 128,
+    "normalizing_data": true,
+    "arch_file": "models/lenet.py",
+    "arch_name": "LeNet5BatchNorm",
+    "arch_args": "None",
+    "optim_name": "Adam",
+    "optim_args": {
+        "lr": 1e-3,
+        "betas": [0.9, 0.999],
+        "weight_decay": 0.01
+    }
+}
