@@ -117,7 +117,6 @@ def feature_extraction(optimizer='Bayessian',dataset='DATASET_CIFAR10',data_augm
     module_path = '.'.join(os.path.split(config['arch_file'])).replace(ext, '')
     module = import_module(module_path)
     arch_class = getattr(module, config['arch_name'])
-    num_classes = 10
     arch_kwargs = {} if config['arch_args'] == 'None' else config['arch_args']
     arch_kwargs['num_classes'] = num_classes
     model = arch_class(**arch_kwargs)
